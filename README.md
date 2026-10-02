@@ -114,21 +114,19 @@ only when `login` tells you the profile's SSO session has died.
 
 ## Sync Skill
 
-The `skill/` directory contains a Claude Code skill for **automatic course material sync**.
+The live skill for **automatic course material sync** is
+`~/projects/magnusprot/skills/brightspace-sync/SKILL.md`, symlinked as the Academia project
+skill `~/Academia/.claude/skills/brightspace-sync` (project-scoped since 2026-10-02, so other
+projects never see it). The `skill/SKILL.md` file in this repo is only a
+stub pointing there. The old text is in git history (`git show b787ae7:skill/SKILL.md`).
 
 ### Install the Skill
 
-Copy the skill's contents to your Claude Code skills directory:
+Link the live skill directory into the Academia project's skills directory:
 
 ```bash
-mkdir -p ~/.claude/skills/brightspace-sync
-cp skill/SKILL.md ~/.claude/skills/brightspace-sync/
+ln -s ~/projects/magnusprot/skills/brightspace-sync ~/Academia/.claude/skills/brightspace-sync
 ```
-
-Copy the *contents*, not the `skill/` directory itself, or you get a nested
-`skill/` inside the target. If that target is a symlink into another repo, the
-file behind the symlink is the copy Claude Code loads, and the copy in `skill/`
-can lag behind it.
 
 ### Usage
 
