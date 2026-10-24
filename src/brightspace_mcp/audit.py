@@ -61,6 +61,10 @@ DOC_EXTENSIONS = (
     ".java", ".py", ".ipynb", ".c", ".cpp", ".h", ".js", ".csv", ".json", ".xml", ".md", ".dat",
 )
 HTML_EXTENSIONS = (".html", ".htm")
+# Synced files that are converted to PDF and then deleted: HTML pages (html2pdf -d)
+# and lecture decks (LibreOffice, pptx deleted after conversion since 2026-10-23).
+# A local X.pdf stands for a remote X with any of these extensions.
+CONVERTED_TO_PDF = HTML_EXTENSIONS + (".pptx", ".ppt")
 MAX_HTML_TOPICS = 80
 MAX_MODULES = 300
 # Overview text at least this long is listed as an outline candidate even without a
@@ -216,7 +220,7 @@ def same_place(context: str, parts: tuple[tuple[str, ...], ...]) -> bool:
 class LocalFile:
     parts: tuple[tuple[str, ...], ...]  # directory components relative to the root, as words()
     mtime: float
-    size: int
+    size: int | None  # None for a PDF standing in for a converted file: sizes differ
 
 
 def skip_local_dir(name: str) -> bool:
@@ -256,12 +260,11 @@ def local_index(root: Path | None) -> dict[str, list[LocalFile]] | None:
                 continue  # a dangling symlink is not a local copy
             entry = LocalFile(parts, st.st_mtime, st.st_size)
             index[f.lower()].append(entry)
-            # Synced HTML pages are converted to PDF and the HTML deleted
-            # (html2pdf -d), so a local X.pdf also stands for a remote X.html.
+            # A local X.pdf also stands for a remote X.html or X.pptx (CONVERTED_TO_PDF).
             stem, ext = os.path.splitext(f.lower())
             if ext == ".pdf":
-                index[stem + ".html"].append(entry)
-                index[stem + ".htm"].append(entry)
+                for alias in CONVERTED_TO_PDF:
+                    index[stem + alias].append(LocalFile(parts, st.st_mtime, None))
     return dict(index)
 
 
@@ -272,7 +275,7 @@ def load_ignore(root: Path | None) -> set[str]:
     """Lower-cased filenames the user deleted on purpose, from `<root>/.syncignore`.
 
     One filename per line, `#` starts a comment. An entry for X.pdf also covers a
-    remote X.html / X.htm, because synced HTML pages are kept as PDF.
+    remote X.html / X.htm / X.pptx / X.ppt, because those are kept as PDF.
 
     Only a missing file means "nothing ignored". Any other read failure raises: a
     list that exists but cannot be read must not quietly turn every file the user
@@ -292,7 +295,7 @@ def load_ignore(root: Path | None) -> set[str]:
         names.add(name)
         stem, ext = os.path.splitext(name)
         if ext == ".pdf":
-            names |= {stem + ".html", stem + ".htm"}
+            names |= {stem + alias for alias in CONVERTED_TO_PDF}
     return names
 
 
@@ -608,7 +611,7 @@ def find_revised(docs: list[Doc], local: dict[str, list[LocalFile]] | None) -> l
             if changed > max(f.mtime for f in files) + 60:
                 _add_note(d, f"remote changed {to_local(d.modified)}")
                 out.append(d)
-        elif d.size and all(f.size != d.size for f in files):
+        elif d.size and all(f.size is not None and f.size != d.size for f in files):
             _add_note(d, f"remote {d.size} bytes, local {', '.join(str(f.size) for f in files)}")
             out.append(d)
     return out

@@ -89,7 +89,18 @@ def test_local_filenames_skips_frozen_and_hidden_dirs(tmp_path: Path):
     (tmp_path / "_scratch" / "tmp.pdf").write_text("x")
     (tmp_path / ".vscode").mkdir()
     (tmp_path / ".vscode" / "settings.json").write_text("{}")
-    assert set(local_index(tmp_path)) == {"outline.pdf", "outline.html", "outline.htm"}
+    assert set(local_index(tmp_path)) == {"outline.pdf", "outline.html", "outline.htm",
+                                          "outline.pptx", "outline.ppt"}
+
+
+def test_local_pdf_stands_for_deleted_pptx(tmp_path: Path):
+    # Lecture decks are converted to PDF and the .pptx deleted, so the PDF must count.
+    (tmp_path / "lectures-pdf").mkdir()
+    (tmp_path / "lectures-pdf" / "L1 - Intro.pdf").write_text("x")
+    index = local_index(tmp_path)
+    assert "l1 - intro.pptx" in index
+    # A PDF never matches the deck's byte size, so the alias must not look revised.
+    assert all(f.size is None for f in index["l1 - intro.pptx"])
 
 
 def test_local_index_walks_current_term_handouts(tmp_path: Path):
