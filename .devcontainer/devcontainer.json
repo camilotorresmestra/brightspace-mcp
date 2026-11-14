@@ -1,0 +1,14 @@
+{
+  "name": "Bloque Neón MCP (personal)",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "postCreateCommand": "bash .devcontainer/install.sh",
+  "forwardPorts": [6080, 8787],
+  "portsAttributes": {
+    "6080": {"label": "Private sign-in desktop", "visibility": "private", "onAutoForward": "silent"},
+    "8787": {"label": "Protected MCP", "visibility": "private", "onAutoForward": "silent"}
+  },
+  "remoteEnv": {
+    "BRIGHTSPACE_URL": "https://bloqueneon.uniandes.edu.co",
+    "BRIGHTSPACE_TZ": "America/Bogota"
+  }
+}
