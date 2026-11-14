@@ -1,5 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# The base image can contain an expired Yarn signing key. Temporarily exclude
+# that unrelated source and restore it on exit. Debian signature checks stay on.
+yarn_source=/etc/apt/sources.list.d/yarn.list
+backup=""
+restore_source() {
+    if [ -n "$backup" ] && [ -f "$backup" ]; then
+        sudo mv "$backup" "$yarn_source"
+    fi
+}
+trap restore_source EXIT
+if [ -f "$yarn_source" ]; then
+    backup=/tmp/brightspace-yarn-source-$$.list
+    sudo mv "$yarn_source" "$backup"
+fi
 sudo apt-get update -qq
 sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xvfb x11vnc novnc websockify openbox
 python -m pip install --user 'mcp==1.26.0' -e '.[dev]'
